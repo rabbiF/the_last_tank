@@ -1,0 +1,58 @@
+# The Last Tank 🎮
+
+**Projet créé dans le cadre d'une formation développeur de jeux vidéo**
+
+## 📖 Histoire
+
+Vous êtes le dernier tank de la toute jeune République de Begard.  
+Face aux assauts incessants de l'Empire Sablonnerai, vous devez tenir coûte que coûte.
+
+**À vous de jouer pour préserver la liberté de la République !**
+
+## 🎮 Comment jouer
+
+### Contrôles
+- **Flèches directionnelles** : Déplacer le tank
+- **A / E** : Rotation du tank
+- **Espace** : Tirer
+
+### Modes de jeu
+- **🏃 Survival** : Survie infinie jusqu'à épuisement de toutes vos vies
+- **⏱️ Timed** : Survivez jusqu'à la fin du chrono défini
+- **🎯 Score** : Atteignez un score cible pour la victoire
+
+## 🛠️ Technologies utilisées
+- **Langage** : Lua
+- **Framework** : LÖVE2D
+- **IDE** : Visual Studio Code
+
+## 🚀 Installation et lancement
+1. Installer LÖVE2D depuis [love2d.org](https://love2d.org/)
+2. Cloner ce repository
+3. Glisser le dossier du projet sur l'exécutable LÖVE2D
+4. Ou lancer via la ligne de commande : `love .`
+
+## 🎯 Fonctionnalités implémentées
+- [x] Déplacement et rotation du tank joueur
+- [x] Système de tir
+- [x] Ennemis avec IA (états : random, follow, pause)
+- [x] Collisions (tank vs ennemis, projectiles)
+- [ ] Système de vies avec jauge visuelle
+- [ ] Effets d'explosion
+- [ ] Machine à États pour les modes de jeu
+- [ ] Interface utilisateur complète
+- [ ] Système de score
+
+## 🎮 Captures d'écran
+*À ajouter prochainement*
+
+## 📚 Contexte pédagogique
+Ce projet met en œuvre les concepts fondamentaux de la programmation de jeux vidéo :
+- Les listes (gestion des ennemis et projectiles)
+- Les angles et rotations (trigonométrie)
+- La modularité (découpage en modules)
+- Les fonctions (structuration du code)
+- Les machines à états (comportements et modes de jeu)
+
+---
+*Projet réalisé dans le cadre de la formation "Programmer des Jeux Vidéo" via l'école Gaming Campus (https://gamingcampus.fr/pro/developpement-jeux-video.html)*
