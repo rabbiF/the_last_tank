@@ -37,11 +37,29 @@ Face aux assauts incessants de l'Empire Sablonnerai, vous devez tenir coûte que
 - [x] Système de tir
 - [x] Ennemis avec IA (états : random, follow, pause)
 - [x] Collisions (tank vs ennemis, projectiles)
-- [ ] Système de vies avec jauge visuelle
-- [ ] Effets d'explosion
+- [x] Système de vies avec jauge visuelle
+- [x] Effets d'explosion
 - [ ] Machine à États pour les modes de jeu
 - [ ] Interface utilisateur complète
 - [ ] Système de score
+
+## 🎯 Fonctionnalités supplémentaires (par priorité)
+
+### 🔊 Audio (Priorité 1)
+- [ ] Sons de tir et d'explosion  
+- [ ] Musique de fond
+- [ ] Effets sonores de menu
+
+### 🗺️ Génération procédurale (Priorité 2)  
+- [ ] Implémentation cellular automata
+- [ ] Cartes dynamiques
+- [ ] Obstacles générés
+
+### ✨ Polish (Priorité 3)
+- [ ] Effets de particules
+- [ ] Animations d'UI
+- [ ] Écran de crédits
+
 
 ## 🎮 Captures d'écran
 *À ajouter prochainement*

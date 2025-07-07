@@ -14,6 +14,10 @@ function love.load()
     myGame.Load()
     Player.Load()
     Ennemy.Load()
+
+    Player.onDeath = function()
+        Ennemy.Load() -- Recharger les ennemis quand le joueur meurt
+    end
 end
 
 -- Fonction utilitaire pour calculer la distance entre deux points
@@ -44,14 +48,13 @@ function love.update(dt)
                 local bulletRadius = math.min(Player.bulletWidth, Player.bulletHeight) / 4
                 local ennemyRadius = math.min(ennemy.width, ennemy.height) / 3
                 
-                if checkCircleCollision(bullet.x, bullet.y, bulletRadius, 
-                                      ennemy.x, ennemy.y, ennemyRadius) then
+                if checkCircleCollision(bullet.x, bullet.y, bulletRadius, ennemy.x, ennemy.y, ennemyRadius) then
                     Ennemy.Kill(ennemy)
                     table.remove(Player.bullets, i)
                     bulletHit = true
-                    print("Ennemi touché!")
                     break -- on sort de la boucle ennemy, l'obus est détruit
                 end
+                
             end
         end
         
@@ -64,13 +67,11 @@ function love.update(dt)
                         local bulletRadius = math.min(Player.bulletWidth, Player.bulletHeight) / 4
                         local enemyBulletRadius = math.min(Ennemy.bulletWidth, Ennemy.bulletHeight) / 4
                         
-                        if checkCircleCollision(bullet.x, bullet.y, bulletRadius,
-                                              enemyBullet.x, enemyBullet.y, enemyBulletRadius) then
+                        if checkCircleCollision(bullet.x, bullet.y, bulletRadius, enemyBullet.x, enemyBullet.y, enemyBulletRadius) then
                             -- Les deux obus se détruisent
                             table.remove(Player.bullets, i)
                             table.remove(ennemy.bullets, j)
                             bulletHit = true
-                            print("Collision entre obus!")
                             break
                         end
                     end
@@ -88,12 +89,12 @@ function love.update(dt)
                 local bulletRadius = math.min(Ennemy.bulletWidth, Ennemy.bulletHeight) / 4
                 local playerRadius = math.min(Player.tank.width, Player.tank.height) / 3
                 
-                if checkCircleCollision(bullet.x, bullet.y, bulletRadius,
-                                      Player.tank.x, Player.tank.y, playerRadius) then
-                    print("Le joueur est touché !")
+                if checkCircleCollision(bullet.x, bullet.y, bulletRadius, Player.tank.x, Player.tank.y, playerRadius) then
+                    Player.Hit(10) 
                     table.remove(ennemy.bullets, i)
-                    -- Ici vous pouvez gérer la mort du joueur
-                    -- Player.Hit() ou Player.LoseLife() par exemple
+                    -- Ennemy.Kill(ennemy)
+                    -- bulletHit = true
+                    break -- on sort de la boucle ennemy, l'obus est détruit
                 end
             end
         end
@@ -105,8 +106,8 @@ function love.update(dt)
             local playerRadius = math.min(Player.tank.width, Player.tank.height) / 3
             local ennemyRadius = math.min(ennemy.width, ennemy.height) / 3
             
-            if checkCircleCollision(Player.tank.x, Player.tank.y, playerRadius,
-                                  ennemy.x, ennemy.y, ennemyRadius) then
+            if checkCircleCollision(Player.tank.x, Player.tank.y, playerRadius, ennemy.x, ennemy.y, ennemyRadius) then
+                print("AVANT répulsion - Ennemis vivants:", #Ennemy.list)
                 -- Repousser le joueur ou l'ennemi pour éviter qu'ils se chevauchent
                 local dx = Player.tank.x - ennemy.x
                 local dy = Player.tank.y - ennemy.y
@@ -114,17 +115,20 @@ function love.update(dt)
                 
                 if distance > 0 then
                     local overlap = (playerRadius + ennemyRadius) - distance
-                    local pushX = (dx / distance) * overlap * 0.5
-                    local pushY = (dy / distance) * overlap * 0.5
+                    local pushX = (dx / distance) * overlap * 0.3
+                    local pushY = (dy / distance) * overlap * 0.3
                     
                     -- Repousser les deux entités
                     Player.tank.x = Player.tank.x + pushX
                     Player.tank.y = Player.tank.y + pushY
-                    ennemy.x = ennemy.x - pushX
-                    ennemy.y = ennemy.y - pushY
+                    --ennemy.x = ennemy.x - pushX
+                    --ennemy.y = ennemy.y - pushY
+                    ennemy.x = math.max(ennemyRadius, math.min(love.graphics.getWidth()-ennemyRadius, ennemy.x))
+                    ennemy.y = math.max(ennemyRadius, math.min(love.graphics.getHeight()-ennemyRadius, ennemy.y))
                     
-                    print("Collision entre joueur et ennemi!")
+                    ---print("Collision entre joueur et ennemi!")
                 end
+                print("APRÈS répulsion - Ennemis vivants:", #Ennemy.list)
             end
         end
     end
@@ -134,11 +138,7 @@ function love.draw()
     myGame.Draw()
     Player.Draw()
     Ennemy.Draw()
-    
-    -- Optionnel: Afficher des informations de debug
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Ennemis vivants: " .. #Ennemy.list, 10, 10)
-    love.graphics.print("Obus joueur: " .. #Player.bullets, 10, 30)
+    Player.DrawUI()
 end
 
 function love.keypressed(key)

@@ -1,48 +1,72 @@
 local Ennemy = {}
-local BULLET_OFFSET = math.pi / 2
+local BULLET_OFFSET = math.rad(90)
 local MAX_ENNEMIES = 4
 local STATE_DURATION = 2 -- secondes par état
+local EXPLOSION_DURATION = 1.0 -- 1 seconde d'explosion
 
 Ennemy.list = {}
+Ennemy.explosionImage = nil
 
 local states = {"random", "follow", "pause"}
 
-function Ennemy.SpawnOne()
-    local w, h = love.graphics.getWidth(), love.graphics.getHeight()
-    local ennemy = {
-        image = love.graphics.newImage("images/tank_red.png"),
-        width = 0,
-        height = 0,
-        x = math.random(50, w-50),
-        y = math.random(50, h-50),
-        speed = 40,
-        angle = 0,
-        cannonAngle = 0, -- Angle séparé pour le canon
-        state = 1, -- 1=random, 2=follow, 3=pause
-        stateTimer = STATE_DURATION,
-        alive = true,
-        bullets = {},
-        shootTimer = math.random() * 2 -- pour désynchroniser les tirs
-    }
-    ennemy.width = ennemy.image:getWidth()
-    ennemy.height = ennemy.image:getHeight()
-    table.insert(Ennemy.list, ennemy)
-end
-
 function Ennemy.Load()
-    Ennemy.bulletImage = love.graphics.newImage("images/bulletRed1.png")
+    Ennemy.bulletImage = love.graphics.newImage("assets/images/bulletRed1.png")
     Ennemy.bulletWidth = Ennemy.bulletImage:getWidth()
     Ennemy.bulletHeight = Ennemy.bulletImage:getHeight()
+    Ennemy.explosionImage = love.graphics.newImage("assets/images/explosion2.png") -- Une seule fois
     Ennemy.list = {}
     for i=1,MAX_ENNEMIES do
         Ennemy.SpawnOne()
     end
 end
 
+function Ennemy.SpawnOne()
+    local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+    local ennemy = {
+        image = love.graphics.newImage("assets/images/tank_red.png"),
+        width = 0,
+        height = 0,
+        -- Spawn des ennemis dans la moitié haute de l'écran
+        x = math.random(50, w-50),
+        y = math.random(50, h/3), -- Ennemis dans le tiers supérieur
+        speed = 40,
+        angle = math.rad(90),
+        cannonAngle = 0,
+        state = 1,
+        stateTimer = STATE_DURATION,
+        alive = true,
+        exploding = false,
+        explosionTimer = 0,
+        bullets = {},
+        shootTimer = math.random() * 2
+    }
+    ennemy.width = ennemy.image:getWidth()
+    ennemy.height = ennemy.image:getHeight()
+    table.insert(Ennemy.list, ennemy)
+end
+
+function Ennemy.Kill(ennemy)
+    ennemy.alive = false
+    ennemy.exploding = true
+    ennemy.explosionTimer = EXPLOSION_DURATION
+    print("Ennemi tué - explosion démarrée")
+end
+
 function Ennemy.Update(dt, player)
-    -- Déplacement et états
-    for _, e in ipairs(Ennemy.list) do
-        if e.alive then
+    -- Mise à jour des ennemis
+    for i = #Ennemy.list, 1, -1 do
+        local e = Ennemy.list[i]
+        
+        if e.exploding then
+            -- Gestion de l'explosion
+            e.explosionTimer = e.explosionTimer - dt
+            if e.explosionTimer <= 0 then
+                -- Explosion terminée, supprimer complètement l'ennemi
+                table.remove(Ennemy.list, i)
+                print("Explosion terminée - ennemi supprimé de la liste")
+            end
+        elseif e.alive then
+            -- Logique normale des ennemis vivants
             e.stateTimer = e.stateTimer - dt
             if e.stateTimer <= 0 then
                 e.state = e.state % 3 + 1
@@ -59,26 +83,18 @@ function Ennemy.Update(dt, player)
                 local dy = math.sin(e.angle)
                 e.x = e.x + dx * e.speed * dt
                 e.y = e.y + dy * e.speed * dt
-                -- En mode random, le canon suit la direction de déplacement
                 e.cannonAngle = e.angle - math.pi/2
                 
             elseif states[e.state] == "follow" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
                 local angleToPlayer = math.atan2(dy, dx)
-                
-                -- Pour le déplacement, on utilise l'angle direct
                 e.angle = angleToPlayer
                 e.x = e.x + math.cos(e.angle) * e.speed * dt
                 e.y = e.y + math.sin(e.angle) * e.speed * dt
-                
-                -- Pour l'orientation du canon, on ajuste selon l'orientation du sprite
-                -- Si le canon du sprite pointe vers le haut, on soustrait π/2
                 e.cannonAngle = angleToPlayer - math.pi/2
                 
             elseif states[e.state] == "pause" then
-                -- En pause, on garde l'orientation actuelle du canon
-                -- Optionnel: faire pointer le canon vers le joueur même en pause
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
                 e.cannonAngle = math.atan2(dy, dx) - math.pi/2
@@ -87,26 +103,11 @@ function Ennemy.Update(dt, player)
             -- Empêcher de sortir de l'écran
             e.x = math.max(e.width/2, math.min(love.graphics.getWidth()-e.width/2, e.x))
             e.y = math.max(e.height/2, math.min(love.graphics.getHeight()-e.height/2, e.y))
-        end
-    end
 
-    -- Régénération si moins de MAX_ENNEMIES
-    local count = 0
-    for _, e in ipairs(Ennemy.list) do
-        if e.alive then count = count + 1 end
-    end
-    while count < MAX_ENNEMIES do
-        Ennemy.SpawnOne()
-        count = count + 1
-    end
-
-    -- Gestion des tirs ennemis
-    for _, e in ipairs(Ennemy.list) do
-        if e.alive then
+            -- Gestion des tirs
             e.shootTimer = (e.shootTimer or 0) - dt
             if e.shootTimer <= 0 then
                 e.shootTimer = 2
-                -- Utiliser l'angle du canon pour tirer
                 local angle = e.cannonAngle + BULLET_OFFSET
                 local offset = e.height / 2
                 local bx = e.x + math.cos(angle) * offset
@@ -118,41 +119,54 @@ function Ennemy.Update(dt, player)
                 })
             end
 
-            -- Déplacement des obus ennemis
-            for i = #e.bullets, 1, -1 do
-                local b = e.bullets[i]
+            -- Déplacement des obus
+            for j = #e.bullets, 1, -1 do
+                local b = e.bullets[j]
                 local speed = 300
                 b.x = b.x + math.cos(b.angle) * speed * dt
                 b.y = b.y + math.sin(b.angle) * speed * dt
                 if b.x < 0 or b.x > love.graphics.getWidth() or b.y < 0 or b.y > love.graphics.getHeight() then
-                    table.remove(e.bullets, i)
+                    table.remove(e.bullets, j)
                 end
             end
         end
+    end
+
+    -- Régénération des ennemis manquants
+    local aliveCount = 0
+    for _, e in ipairs(Ennemy.list) do
+        if e.alive then aliveCount = aliveCount + 1 end
+    end
+    
+    while aliveCount < MAX_ENNEMIES do
+        Ennemy.SpawnOne()
+        aliveCount = aliveCount + 1
     end
 end
 
 function Ennemy.Draw()
     for _, e in ipairs(Ennemy.list) do
         if e.alive then
-            -- Dessiner le tank avec l'angle du canon
+            -- Dessiner le tank vivant
             love.graphics.draw(
                 e.image,
                 e.x, e.y,
-                e.cannonAngle, -- Utiliser cannonAngle au lieu de angle
+                e.cannonAngle,
                 1, 1,
                 e.width / 2, e.height / 2
             )
-            -- Affiche l'état au-dessus du tank
+            
+            -- Afficher l'état
             local stateName = states[e.state]
-            love.graphics.setColor(1, 1, 1) -- blanc
+            love.graphics.setColor(1, 1, 1)
             love.graphics.print(
                 stateName,
                 e.x - e.width / 2,
-                e.y - e.height / 2 - 16 -- 16 pixels au-dessus du tank
+                e.y - e.height / 2 - 16
             )
+            
+            -- Dessiner les obus
             if stateName == "follow" then
-                -- Dessin des obus (pour tous les états, pas seulement follow)
                 for _, b in ipairs(e.bullets) do
                     love.graphics.draw(
                         Ennemy.bulletImage,
@@ -163,12 +177,20 @@ function Ennemy.Draw()
                     )
                 end
             end
+            
+        elseif e.exploding then
+            -- Dessiner l'explosion
+            love.graphics.setColor(1, 1, 1) -- Blanc normal
+            love.graphics.draw(
+                Ennemy.explosionImage,
+                e.x, e.y,
+                0, -- Pas de rotation pour l'explosion
+                1, 1,
+                Ennemy.explosionImage:getWidth() / 2,
+                Ennemy.explosionImage:getHeight() / 2
+            )
         end
     end
-end
-
-function Ennemy.Kill(ennemy)
-    ennemy.alive = false
 end
 
 return Ennemy

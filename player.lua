@@ -1,27 +1,107 @@
 --Fichier de gestion du joueur
 local Player = {}
+-- Statistiques du joueur
+Player.maxLife = 100
+Player.currentLife = 100
+Player.maxLives = 3
+Player.lives = 3
+Player.isAlive = true
+Player.respawnTimer = 0
+Player.RESPAWN_DELAY = 2.0 -- 2 secondes avant respawn
+
 local BULLET_OFFSET = math.rad(90)
 
 function Player.Load()
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+
     Player.tank = {
-        image = love.graphics.newImage("images/tank_green.png"),
+        image = love.graphics.newImage("assets/images/tank_green.png"),
         width = 0,
         height = 0,
-        x = love.graphics.getWidth() / 2,
-        y = love.graphics.getHeight() / 2,       
+        x = screenWidth / 2,
+        y = screenHeight - 80,      
         speed = 60,
-        angle = 0
+        angle = math.rad(180)
     }
     Player.tank.width = Player.tank.image:getWidth()
     Player.tank.height = Player.tank.image:getHeight()
 
-    Player.bulletImage = love.graphics.newImage("images/bulletGreen1.png")
+    Player.bulletImage = love.graphics.newImage("assets/images/bulletGreen1.png")
     Player.bulletWidth = Player.bulletImage:getWidth()
     Player.bulletHeight = Player.bulletImage:getHeight()
     Player.bullets = {}
+    Player.explosionImage = love.graphics.newImage("assets/images/explosion2.png")
+    Player.explosionWidth = Player.explosionImage:getWidth()
+    Player.explosionHeight = Player.explosionImage:getHeight()
+    
+
+    -- Reset des stats si c'est un nouveau jeu
+    if Player.lives <= 0 then
+        Player.lives = Player.maxLives
+        Player.currentLife = Player.maxLife
+        Player.isAlive = true
+    end
+end
+
+function Player.Hit(damage)
+    if not Player.isAlive then return end
+    
+    Player.currentLife = Player.currentLife - damage
+    print("Joueur touché ! Vie restante : " .. Player.currentLife)
+    
+    if Player.currentLife <= 0 then
+        Player.Die()
+    end
+end
+
+function Player.Die()
+    Player.isAlive = false
+    Player.lives = Player.lives - 1
+    Player.respawnTimer = Player.RESPAWN_DELAY
+    
+    print("Le joueur est mort ! Vies restantes : " .. Player.lives)
+    
+    if Player.lives <= 0 then
+        Player.GameOver()
+    else
+        -- Préparer le respawn
+        Player.currentLife = Player.maxLife
+        -- Ajouter un callback pour notifier main.lua
+        if Player.onDeath then
+            Player.onDeath() -- Callback pour nettoyer les ennemis
+        end
+    end
+end
+
+function Player.Respawn()
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+
+    Player.isAlive = true
+    Player.tank.x = screenWidth / 2
+    Player.tank.y = screenHeight - 80
+    Player.tank.angle = math.rad(180)
+    Player.bullets = {} -- Nettoyer les projectiles
+    print("Joueur respawn !")
+end
+
+function Player.GameOver()
+    print("GAME OVER !")
+    -- Ici pour déclencher l'état GAMEOVER de votre MAE
 end
 
 function Player.Update(dt, ennemy)
+    if not Player.isAlive then
+        print("Joueur mort, timer:", Player.respawnTimer)
+        Player.respawnTimer = Player.respawnTimer - dt
+        if Player.respawnTimer <= 0 and Player.lives > 0 then
+            print("Tentative de respawn...")
+            Player.Respawn()
+        end
+        return
+    end
+
     local moveX, moveY = 0, 0
     local moveSpeed = Player.tank.speed
 
@@ -73,10 +153,22 @@ function Player.Update(dt, ennemy)
     end
     if love.keyboard.isDown("e") then
         Player.tank.angle = Player.tank.angle + rotationSpeed * dt
-    end
+    end    
 end
 
 function Player.Draw()
+    if not Player.isAlive then 
+        -- dessiner une explosion ou rien
+        love.graphics.draw(
+            Player.explosionImage,
+            Player.tank.x, Player.tank.y,
+            Player.tank.angle,
+            1, 1,
+            Player.explosionWidth / 2,  Player.explosionHeight / 2
+        )
+        return 
+    end
+
     -- Obus
     for _, obus in ipairs(Player.bullets) do
         love.graphics.draw(
@@ -98,6 +190,37 @@ function Player.Draw()
     )
 end
 
+function Player.DrawUI()
+    -- Barre de vie
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Santé : ", 10, 50)
+    
+    -- Fond de la barre
+    love.graphics.setColor(0.3, 0.3, 0.3)
+    love.graphics.rectangle("fill", 80, 50, Player.maxLife, 20)
+    
+    -- Barre de vie actuelle
+    if Player.currentLife > 0 then
+        local lifePercent = Player.currentLife / Player.maxLife
+        if lifePercent > 0.6 then
+            love.graphics.setColor(0, 1, 0) -- Vert
+        elseif lifePercent > 0.3 then
+            love.graphics.setColor(1, 1, 0) -- Jaune
+        else
+            love.graphics.setColor(1, 0, 0) -- Rouge
+        end
+        love.graphics.rectangle("fill", 80, 50, Player.currentLife, 20)
+    end
+    
+    -- Vies restantes
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Vies : " .. Player.lives, 10, 80)
+    
+    -- Timer de respawn
+    if not Player.isAlive and Player.lives > 0 then
+        love.graphics.print("Respawn dans : " .. math.ceil(Player.respawnTimer), 10, 110)
+    end
+end
 
 function Player.KeyPressed(key)
     if key == "space" then

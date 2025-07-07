@@ -32,7 +32,7 @@ Game.TileTypes = {}
 
 function Game.Load()
     
-    Game.TileSheet = love.graphics.newImage("images/terrain.png")
+    Game.TileSheet = love.graphics.newImage("assets/images/terrain.png")
     local nbColumns = Game.TileSheet:getWidth() / Game.Map.TILE_WIDTH
     local nbLines = Game.TileSheet:getHeight() / Game.Map.TILE_HEIGHT
 
