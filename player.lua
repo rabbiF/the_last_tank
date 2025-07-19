@@ -4,7 +4,7 @@ local Player = {}
 Player.maxLife = 100
 Player.currentLife = 100
 Player.maxLives = 3
-Player.lives = 3
+Player.lives = 1
 Player.isAlive = true
 Player.respawnTimer = 0
 Player.RESPAWN_DELAY = 2.0 -- 2 secondes avant respawn
@@ -34,7 +34,6 @@ function Player.Load()
     Player.explosionImage = love.graphics.newImage("assets/images/explosion2.png")
     Player.explosionWidth = Player.explosionImage:getWidth()
     Player.explosionHeight = Player.explosionImage:getHeight()
-    
 
     -- Reset des stats si c'est un nouveau jeu
     if Player.lives <= 0 then
@@ -48,7 +47,6 @@ function Player.Hit(damage)
     if not Player.isAlive then return end
     
     Player.currentLife = Player.currentLife - damage
-    print("Joueur touché ! Vie restante : " .. Player.currentLife)
     
     if Player.currentLife <= 0 then
         Player.Die()
@@ -93,7 +91,6 @@ end
 
 function Player.Update(dt, ennemy)
     if not Player.isAlive then
-        print("Joueur mort, timer:", Player.respawnTimer)
         Player.respawnTimer = Player.respawnTimer - dt
         if Player.respawnTimer <= 0 and Player.lives > 0 then
             print("Tentative de respawn...")

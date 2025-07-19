@@ -39,7 +39,7 @@ Face aux assauts incessants de l'Empire Sablonnerai, vous devez tenir coûte que
 - [x] Collisions (tank vs ennemis, projectiles)
 - [x] Système de vies avec jauge visuelle
 - [x] Effets d'explosion
-- [ ] Machine à États pour les modes de jeu
+- [x] Machine à États pour les modes de jeu
 - [ ] Interface utilisateur complète
 - [ ] Système de score
 

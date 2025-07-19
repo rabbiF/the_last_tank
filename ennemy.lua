@@ -49,7 +49,6 @@ function Ennemy.Kill(ennemy)
     ennemy.alive = false
     ennemy.exploding = true
     ennemy.explosionTimer = EXPLOSION_DURATION
-    print("Ennemi tué - explosion démarrée")
 end
 
 function Ennemy.Update(dt, player)
@@ -63,7 +62,6 @@ function Ennemy.Update(dt, player)
             if e.explosionTimer <= 0 then
                 -- Explosion terminée, supprimer complètement l'ennemi
                 table.remove(Ennemy.list, i)
-                print("Explosion terminée - ennemi supprimé de la liste")
             end
         elseif e.alive then
             -- Logique normale des ennemis vivants
@@ -88,16 +86,15 @@ function Ennemy.Update(dt, player)
             elseif states[e.state] == "follow" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                local angleToPlayer = math.atan2(dy, dx)
+                local angleToPlayer = math.atan(dy, dx)
                 e.angle = angleToPlayer
                 e.x = e.x + math.cos(e.angle) * e.speed * dt
                 e.y = e.y + math.sin(e.angle) * e.speed * dt
                 e.cannonAngle = angleToPlayer - math.pi/2
-                
             elseif states[e.state] == "pause" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                e.cannonAngle = math.atan2(dy, dx) - math.pi/2
+                e.cannonAngle = math.atan(dy, dx) - math.pi/2
             end
             
             -- Empêcher de sortir de l'écran
