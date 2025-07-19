@@ -4,7 +4,7 @@ local Player = {}
 Player.maxLife = 100
 Player.currentLife = 100
 Player.maxLives = 3
-Player.lives = 1
+Player.lives = 3
 Player.isAlive = true
 Player.respawnTimer = 0
 Player.RESPAWN_DELAY = 2.0 -- 2 secondes avant respawn
@@ -58,11 +58,7 @@ function Player.Die()
     Player.lives = Player.lives - 1
     Player.respawnTimer = Player.RESPAWN_DELAY
     
-    print("Le joueur est mort ! Vies restantes : " .. Player.lives)
-    
-    if Player.lives <= 0 then
-        Player.GameOver()
-    else
+    if Player.lives > 0 then
         -- Préparer le respawn
         Player.currentLife = Player.maxLife
         -- Ajouter un callback pour notifier main.lua
@@ -81,19 +77,12 @@ function Player.Respawn()
     Player.tank.y = screenHeight - 80
     Player.tank.angle = math.rad(180)
     Player.bullets = {} -- Nettoyer les projectiles
-    print("Joueur respawn !")
-end
-
-function Player.GameOver()
-    print("GAME OVER !")
-    -- Ici pour déclencher l'état GAMEOVER de votre MAE
 end
 
 function Player.Update(dt, ennemy)
     if not Player.isAlive then
         Player.respawnTimer = Player.respawnTimer - dt
         if Player.respawnTimer <= 0 and Player.lives > 0 then
-            print("Tentative de respawn...")
             Player.Respawn()
         end
         return

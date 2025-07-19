@@ -93,7 +93,6 @@ end
 
 function Game.SetScoreMode(targetScore)
     targetScore = targetScore or 1000  -- 1000 points par défaut
-    print("Mode Score sélectionné:", targetScore, "points")
     Game.GameModes.current = "score"
     Game.GameModes.score.active = true
     Game.GameModes.score.target = targetScore
@@ -118,40 +117,6 @@ end
 function Game.ChangeState(newState)
     Game.State.previous = Game.State.current
     Game.State.current = newState
-    print(newState)
-    -- Actions lors des transitions
-    if newState == "MENU" then
-        Game.OnreturnMenu()
-    elseif newState == "GAMEPLAY" then
-        Game.OnreturnGameplay()
-    elseif newState == "PAUSE" then
-        Game.OnreturnPause()
-    elseif newState == "GAMEOVER" then
-        Game.OnreturnGameOver()
-    elseif newState == "VICTORY" then
-        Game.OnreturnVictory()
-    end
-end
-
--- === CALLBACKS D'ÉTATS ===
-function Game.OnreturnMenu()
-    print("=== MENU ===")
-end
-
-function Game.OnreturnGameplay()
-    print("=== GAMEPLAY DÉMARRÉ ===")
-end
-
-function Game.OnreturnPause()
-    print("=== PAUSE ===")
-end
-
-function Game.OnreturnGameOver()
-    print("=== GAME OVER ===")
-end
-
-function Game.OnreturnVictory()
-    print("=== VICTOIRE ===")
 end
 
 -- === FONCTIONS PRINCIPALES ===
@@ -213,6 +178,12 @@ function Game.Update(dt)
     elseif Game.State.current == "VICTORY" then
         Game.UpdateVictory(dt)
     end
+
+    if love.keyboard.isDown("d") then
+        Ennemy.debug = true  -- voir l'etat des ennemis  {"random", "follow", "pause"}
+    else
+        Ennemy.debug = false
+    end
 end
 
 function Game.Draw()
@@ -233,8 +204,9 @@ function Game.Draw()
 end
 
 function Game.KeyPressed(key)
+    
     if key == "escape" then
-        love.event.quit()  -- Quitter le jeu
+        love.event.quit()  -- Quitter le jeu       
     elseif Game.State.current == "MENU" then
         Game.KeyPressedMenu(key)
     elseif Game.State.current == "GAMEPLAY" then
@@ -272,6 +244,7 @@ function Game.UpdateGameplay(dt)
                     Ennemy.Kill(ennemy)
                     table.remove(Player.bullets, i)
                     bulletHit = true
+                    Game.AddScore(50)
                     break -- on sort de la boucle ennemy, l'obus est détruit
                 end
                     
@@ -398,8 +371,7 @@ function Game.DrawMenu()
     UI.DrawMenu()
 end
 
-function Game.DrawGameplay()
-    
+function Game.DrawGameplay()    
     Player.Draw()
     Ennemy.Draw()
     Player.DrawUI()
@@ -432,6 +404,8 @@ end
 
 function Game.DrawVictory()
     love.graphics.setColor(0, 1, 0)
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    love.graphics.setColor(1, 1, 1)
     love.graphics.print("=== VICTOIRE ===", love.graphics.getWidth()/2 - 70, love.graphics.getHeight()/2)
 end
 
@@ -441,8 +415,7 @@ function Game.KeyPressedMenu(key)
 end
 
 function Game.KeyPressedGameplay(key)
-
-    if key == "escape" then
+    if key == "backspace" then
         Game.ChangeState("PAUSE")
     else
         -- Transmettre toutes les autres touches au joueur
@@ -451,7 +424,7 @@ function Game.KeyPressedGameplay(key)
 end
 
 function Game.KeyPressedPause(key)
-    if key == "escape" then
+    if key == "backspace" then
         Game.ChangeState("GAMEPLAY")
     end
 end
@@ -471,7 +444,6 @@ end
 function Game.AddScore(points)
     if Game.GameModes.score.active then
         Game.GameModes.score.current = Game.GameModes.score.current + points
-        print("Score:", Game.GameModes.score.current .. "/" .. Game.GameModes.score.target)
     end
 end
 

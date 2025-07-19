@@ -15,6 +15,7 @@ function Ennemy.Load()
     Ennemy.bulletHeight = Ennemy.bulletImage:getHeight()
     Ennemy.explosionImage = love.graphics.newImage("assets/images/explosion2.png") -- Une seule fois
     Ennemy.list = {}
+    Ennemy.debug = false
     for i=1,MAX_ENNEMIES do
         Ennemy.SpawnOne()
     end
@@ -152,16 +153,16 @@ function Ennemy.Draw()
                 1, 1,
                 e.width / 2, e.height / 2
             )
-            
-            -- Afficher l'état
             local stateName = states[e.state]
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.print(
-                stateName,
-                e.x - e.width / 2,
-                e.y - e.height / 2 - 16
-            )
-            
+             -- Afficher l'état
+            if Ennemy.debug then 
+                love.graphics.setColor(1, 1, 1)
+                love.graphics.print(
+                    stateName,
+                    e.x - e.width / 2,
+                    e.y - e.height / 2 - 16
+                )
+            end
             -- Dessiner les obus
             if stateName == "follow" then
                 for _, b in ipairs(e.bullets) do
