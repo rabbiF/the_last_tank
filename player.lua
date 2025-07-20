@@ -30,7 +30,7 @@ function Player.Load()
     Player.bulletImage = love.graphics.newImage("assets/images/bulletGreen1.png")
     Player.bulletWidth = Player.bulletImage:getWidth()
     Player.bulletHeight = Player.bulletImage:getHeight()
-    Player.bullets = {}
+    Player.bullets = {} -- Liste des projectiles du joueur
     Player.explosionImage = love.graphics.newImage("assets/images/explosion2.png")
     Player.explosionWidth = Player.explosionImage:getWidth()
     Player.explosionHeight = Player.explosionImage:getHeight()

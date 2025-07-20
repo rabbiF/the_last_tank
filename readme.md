@@ -12,7 +12,7 @@ Face aux assauts incessants de l'Empire Sablonnerai, vous devez tenir coûte que
 ## 🎮 Comment jouer
 
 ### Contrôles
-- **Flèches directionnelles** : Déplacer le tank
+- **ZSQD** : Déplacer le tank
 - **A / E** : Rotation du tank
 - **Espace** : Tirer
 

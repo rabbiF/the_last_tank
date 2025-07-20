@@ -25,6 +25,7 @@ function UI.Load()
     
     -- Définition des menus
     UI.menus = {
+        -- Menu principal + sous-menus (Timed/Score)
         MAIN = {
             title = "THE LAST TANK",
             options = {
@@ -55,6 +56,8 @@ function UI.Load()
         }
     }
 end
+-- === ARCHITECTURE MODULAIRE UI ===
+-- Évite les dépendances circulaires UI ↔ Renderer
 local Renderer = require("gameUIrenderer")
 
 -- LE MENU

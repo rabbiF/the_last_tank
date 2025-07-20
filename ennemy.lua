@@ -3,10 +3,6 @@ local BULLET_OFFSET = math.rad(90)
 local MAX_ENNEMIES = 4
 local STATE_DURATION = 2 -- secondes par état
 local EXPLOSION_DURATION = 1.0 -- 1 seconde d'explosion
-
-Ennemy.list = {}
-Ennemy.explosionImage = nil
-
 local states = {"random", "follow", "pause"}
 
 function Ennemy.Load()
@@ -14,7 +10,7 @@ function Ennemy.Load()
     Ennemy.bulletWidth = Ennemy.bulletImage:getWidth()
     Ennemy.bulletHeight = Ennemy.bulletImage:getHeight()
     Ennemy.explosionImage = love.graphics.newImage("assets/images/explosion2.png") -- Une seule fois
-    Ennemy.list = {}
+    Ennemy.list = {} -- Liste dynamique des ennemis (spawn/suppression)
     Ennemy.debug = false
     for i=1,MAX_ENNEMIES do
         Ennemy.SpawnOne()
@@ -51,7 +47,8 @@ function Ennemy.Kill(ennemy)
     ennemy.exploding = true
     ennemy.explosionTimer = EXPLOSION_DURATION
 end
-
+-- === MACHINE À ÉTATS DES ENNEMIS ===
+-- Cycle : random (mvt aléatoire) → follow (poursuite) → pause (arrêt + visée)
 function Ennemy.Update(dt, player)
     -- Mise à jour des ennemis
     for i = #Ennemy.list, 1, -1 do
@@ -87,7 +84,7 @@ function Ennemy.Update(dt, player)
             elseif states[e.state] == "follow" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                local angleToPlayer = math.atan(dy, dx)
+                local angleToPlayer = math.atan(dy, dx) -- Calcul de l'angle vers le joueur pour la poursuite
                 e.angle = angleToPlayer
                 e.x = e.x + math.cos(e.angle) * e.speed * dt
                 e.y = e.y + math.sin(e.angle) * e.speed * dt

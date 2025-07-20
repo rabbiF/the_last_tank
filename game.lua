@@ -1,11 +1,17 @@
+-- === ARCHITECTURE MODULAIRE ===
+-- game.lua : Orchestrateur principal (MAE + modes)
+-- player.lua/ennemy.lua : Logique métier
+-- gameUI.lua : Interface utilisateur
+-- gameColission.lua : Système de collision centralisé
 local Player = require("player")
 local Ennemy = require("ennemy")
 local UI = require("gameUI")
+
 -- Fichier pour gérer la carte et les tuiles du jeu
 local Game = {}
 
-
 Game.Map = {}
+-- Tilemap statique
 Game.Map.Grid =  {
     {1, 21, 21, 21, 21, 1, 21, 21, 21, 21, 21, 21, 21},
     {21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21},
@@ -20,8 +26,7 @@ Game.Map.Grid =  {
     {21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21},
     {21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21},
     {21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21}
-  }
-
+}
 
 Game.Map.MAP_WIDTH = 16
 Game.Map.MAP_HEIGHT = 12
@@ -35,11 +40,14 @@ Game.TileTypes = {}
 
 -- === PARTIE MAE (nouvelle) ===
 Game.State = {
-    current = "MENU",
+    current = "MENU", -- MAE non-linéaire : MENU ↔ GAMEPLAY ↔ PAUSE/GAMEOVER/VICTORY
     previous = nil
 }
 
--- Modes de jeu disponibles
+-- === MODES DE JEU CONFIGURABLES ===
+-- Survival : Survie infinie
+-- Timed : Chronométré avec victoire si temps écoulé  
+-- Score : Objectif de points à atteindre
 Game.GameModes = {
     current = "survival",  -- Par défaut    
     -- Configuration Survival
@@ -59,21 +67,9 @@ Game.GameModes = {
         current = 0         -- Score actuel
     }
 }
--- Fonction utilitaire pour calculer la distance entre deux points
-local function getDistance(x1, y1, x2, y2)
-    local dx = x1 - x2
-    local dy = y1 - y2
-    return math.sqrt(dx*dx + dy*dy)
-end
-
--- Fonction utilitaire pour vérifier la collision entre deux cercles
-local function checkCircleCollision(x1, y1, r1, x2, y2, r2)
-    return getDistance(x1, y1, x2, y2) < (r1 + r2)
-end
 
 -- === FONCTIONS DE CONFIGURATION DES MODES ===
 function Game.SetSurvivalMode()
-    print("Mode Survival sélectionné")
     Game.GameModes.current = "survival"
     Game.GameModes.survival.active = true
     Game.GameModes.timed.active = false
@@ -82,7 +78,6 @@ end
 
 function Game.SetTimedMode(minutes)
     minutes = minutes or 2  -- 2 minutes par défaut
-    print("Mode Timed sélectionné:", minutes, "minutes")
     Game.GameModes.current = "timed"
     Game.GameModes.timed.active = true
     Game.GameModes.timed.duration = minutes * 60
@@ -145,8 +140,7 @@ function Game.Load()
     end
 
     Game.TileTypes[21] = "Sand"
-    Game.TileTypes[1] = "Grass"
-    
+    Game.TileTypes[1] = "Grass"    
 
    Game.Map.SeenGrid = {}
     for l=1, Game.Map.MAP_HEIGHT do
@@ -167,16 +161,8 @@ function Game.Load()
 end
 
 function Game.Update(dt)
-    if Game.State.current == "MENU" then
-        Game.UpdateMenu(dt)
-    elseif Game.State.current == "GAMEPLAY" then
+    if Game.State.current == "GAMEPLAY" then
         Game.UpdateGameplay(dt)
-    elseif Game.State.current == "PAUSE" then
-        Game.UpdatePause(dt)
-    elseif Game.State.current == "GAMEOVER" then
-        Game.UpdateGameOver(dt)
-    elseif Game.State.current == "VICTORY" then
-        Game.UpdateVictory(dt)
     end
 
     if love.keyboard.isDown("d") then
@@ -229,94 +215,9 @@ function Game.UpdateGameplay(dt)
     Player.Update(dt)
     Ennemy.Update(dt, Player)
 
-    -- Gestion des collisions : obus du joueur sur les ennemis
-    for i = #Player.bullets, 1, -1 do
-        local bullet = Player.bullets[i]
-        local bulletHit = false
-            
-        for _, ennemy in ipairs(Ennemy.list) do
-            if ennemy.alive then
-                -- Collision plus précise avec rayon approprié
-                local bulletRadius = math.min(Player.bulletWidth, Player.bulletHeight) / 4
-                local ennemyRadius = math.min(ennemy.width, ennemy.height) / 3
-                    
-                if checkCircleCollision(bullet.x, bullet.y, bulletRadius, ennemy.x, ennemy.y, ennemyRadius) then
-                    Ennemy.Kill(ennemy)
-                    table.remove(Player.bullets, i)
-                    bulletHit = true
-                    Game.AddScore(50)
-                    break -- on sort de la boucle ennemy, l'obus est détruit
-                end
-                    
-            end
-        end
-            
-            -- Si l'obus n'a pas touché d'ennemi, vérifier collision avec obus ennemis
-        if not bulletHit then
-            for _, ennemy in ipairs(Ennemy.list) do
-                if ennemy.alive then
-                    for j = #ennemy.bullets, 1, -1 do
-                        local enemyBullet = ennemy.bullets[j]
-                        local bulletRadius = math.min(Player.bulletWidth, Player.bulletHeight) / 4
-                        local enemyBulletRadius = math.min(Ennemy.bulletWidth, Ennemy.bulletHeight) / 4
-                            
-                        if checkCircleCollision(bullet.x, bullet.y, bulletRadius, enemyBullet.x, enemyBullet.y, enemyBulletRadius) then
-                            -- Les deux obus se détruisent
-                            table.remove(Player.bullets, i)
-                            table.remove(ennemy.bullets, j)
-                            bulletHit = true
-                            break
-                        end
-                    end
-                    if bulletHit then break end
-                end
-            end
-        end
-    end
-        
-        -- Gestion des collisions : tirs ennemis sur le joueur
-    for _, ennemy in ipairs(Ennemy.list) do
-        if ennemy.alive then
-            for i = #ennemy.bullets, 1, -1 do
-                local bullet = ennemy.bullets[i]
-                local bulletRadius = math.min(Ennemy.bulletWidth, Ennemy.bulletHeight) / 4
-                local playerRadius = math.min(Player.tank.width, Player.tank.height) / 3
-                   
-                if checkCircleCollision(bullet.x, bullet.y, bulletRadius, Player.tank.x, Player.tank.y, playerRadius) then
-                    Player.Hit(10) 
-                    table.remove(ennemy.bullets, i)
-                    break -- on sort de la boucle ennemy, l'obus est détruit
-                end
-            end
-        end
-    end
-        
-    -- Gestion des collisions : joueur contre ennemis (collision physique)
-    for _, ennemy in ipairs(Ennemy.list) do
-        if ennemy.alive then
-            local playerRadius = math.min(Player.tank.width, Player.tank.height) / 3
-            local ennemyRadius = math.min(ennemy.width, ennemy.height) / 3
-                
-            if checkCircleCollision(Player.tank.x, Player.tank.y, playerRadius, ennemy.x, ennemy.y, ennemyRadius) then
-                -- Repousser le joueur ou l'ennemi pour éviter qu'ils se chevauchent
-                local dx = Player.tank.x - ennemy.x
-                local dy = Player.tank.y - ennemy.y
-                local distance = math.sqrt(dx*dx + dy*dy)
-                    
-                if distance > 0 then
-                    local overlap = (playerRadius + ennemyRadius) - distance
-                    local pushX = (dx / distance) * overlap * 0.3
-                    local pushY = (dy / distance) * overlap * 0.3
-                        
-                    -- Repousser les deux entités
-                    Player.tank.x = Player.tank.x + pushX
-                    Player.tank.y = Player.tank.y + pushY
-                    ennemy.x = math.max(ennemyRadius, math.min(love.graphics.getWidth()-ennemyRadius, ennemy.x))
-                    ennemy.y = math.max(ennemyRadius, math.min(love.graphics.getHeight()-ennemyRadius, ennemy.y))                        
-                end
-            end
-        end
-    end
+    -- Gestion des collissions
+    local Colission = require("gameColission")
+    Colission.Update(dt, Player, Ennemy, Game)
 
     -- Gestion spécifique des modes
     if Game.GameModes.timed.active then
@@ -335,18 +236,6 @@ function Game.UpdateGameplay(dt)
     if Player.currentLife <= 0  then
         Game.ChangeState("GAMEOVER")
     end
-end
-
-function Game.UpdatePause(dt)
-    -- Rien ne bouge en pause
-end
-
-function Game.UpdateGameOver(dt)
-    -- Logique de game over
-end
-
-function Game.UpdateVictory(dt)
-    -- Logique de victoire
 end
 
 -- === FONCTIONS DE DESSIN ===
@@ -387,26 +276,28 @@ function Game.DrawGameplay()
     end
 end
 
+function Game.DrawText(text)
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print(text, love.graphics.getWidth()/2 - 50, love.graphics.getHeight()/2)
+end
+
 function Game.DrawPause()
     Game.DrawGameplay()  -- Dessiner le jeu en arrière-plan
     love.graphics.setColor(0, 0, 0, 0.5)
-    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("=== PAUSE ===", love.graphics.getWidth()/2 - 50, love.graphics.getHeight()/2)
+    Game.DrawText("=== PAUSE ===")
 end
 
 function Game.DrawGameOver()
     love.graphics.setColor(1, 0, 0)
     love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("=== GAME OVER ===", love.graphics.getWidth()/2 - 80, love.graphics.getHeight()/2)
+    Game.DrawText("=== GAME OVER ===")
 end
 
 function Game.DrawVictory()
     love.graphics.setColor(0, 1, 0)
     love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("=== VICTOIRE ===", love.graphics.getWidth()/2 - 70, love.graphics.getHeight()/2)
+    Game.DrawText("=== VICTOIRE ===")
 end
 
 -- === GESTION DES TOUCHES PAR ÉTAT ===
@@ -417,9 +308,8 @@ end
 function Game.KeyPressedGameplay(key)
     if key == "backspace" then
         Game.ChangeState("PAUSE")
-    else
-        -- Transmettre toutes les autres touches au joueur
-        Player.KeyPressed(key)        
+    else 
+        Player.KeyPressed(key)  -- Transmettre toutes les autres touches au joueur   
     end
 end
 

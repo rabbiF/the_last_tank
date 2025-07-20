@@ -209,7 +209,8 @@ function Renderer.DrawAdaptiveButton(buttonImage, x, y, targetWidth, targetHeigh
     love.graphics.draw(buttonImage, x, y, 0, scaleX, scaleY)
 end
 
--- Bouton 9-slice (bordures préservées)
+-- === SYSTÈME 9-SLICE POUR BOUTONS ADAPTATIFS ===
+-- Préserve les bordures lors du redimensionnement
 function Renderer.DrawNineSliceButton(buttonImage, x, y, targetWidth, targetHeight)
     local originalWidth = buttonImage:getWidth()
     local originalHeight = buttonImage:getHeight()
