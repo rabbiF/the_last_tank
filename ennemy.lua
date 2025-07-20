@@ -3,8 +3,11 @@ local BULLET_OFFSET = math.rad(90)
 local MAX_ENNEMIES = 4
 local STATE_DURATION = 2 -- secondes par état
 local EXPLOSION_DURATION = 1.0 -- 1 seconde d'explosion
+-- === MACHINE À ÉTATS DES ENNEMIS ===
+-- States: 1=random, 2=follow, 3=pause (cycle de 2s chacun)
 local states = {"random", "follow", "pause"}
 
+-- === FONCTION POUR REMPLACER math.atan2 ===
 local function atan2(y, x)
     if x > 0 then
         return math.atan(y / x)
@@ -29,7 +32,6 @@ function Ennemy.Load()
     Ennemy.bulletHeight = Ennemy.bulletImage:getHeight()
     Ennemy.explosionImage = love.graphics.newImage("assets/images/explosion2.png")
     Ennemy.list = {}
-    Ennemy.debug = false
     for i=1,MAX_ENNEMIES do
         Ennemy.SpawnOne()
     end
@@ -112,7 +114,7 @@ function Ennemy.Update(dt, player)
             elseif states[e.state] == "follow" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                -- === atan2 pour gérer tous les quadrants ===
+                -- === UTILISE LA FONCTION CUSTOM AU LIEU DE math.atan2 ===
                 local angleToPlayer = atan2(dy, dx)
                 e.angle = angleToPlayer
                 e.x = e.x + math.cos(e.angle) * e.speed * dt
@@ -122,37 +124,67 @@ function Ennemy.Update(dt, player)
             elseif states[e.state] == "pause" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                e.cannonAngle = atan2(dy, dx) - math.pi/2 
+                -- === CORRECTION : Utilise atan2 au lieu de math.atan ===
+                e.cannonAngle = atan2(dy, dx) - math.pi/2
             end
             
             -- Empêcher de sortir de l'écran
             e.x = math.max(e.width/2, math.min(love.graphics.getWidth()-e.width/2, e.x))
             e.y = math.max(e.height/2, math.min(love.graphics.getHeight()-e.height/2, e.y))
 
-            -- === VOTRE LOGIQUE ORIGINALE EXACTE ===
-            e.shootTimer = (e.shootTimer or 0) - dt
-            if e.shootTimer <= 0 then
-                e.shootTimer = 2
-                local fireAngle = e.cannonAngle + math.pi/2
-                local offset = e.height / 2
-                local bx = e.x + math.cos(fireAngle) * offset
-                local by = e.y + math.sin(fireAngle) * offset
-                table.insert(e.bullets, {
-                    x = bx,
-                    y = by,
-                    angle = fireAngle
-                })
+            -- === GESTION DES TIRS (AMÉLIORÉE) ===
+            if states[e.state] == "follow" or states[e.state] == "pause" then
+                e.shootTimer = (e.shootTimer or 0) - dt
+                if e.shootTimer <= 0 then
+                    e.shootTimer = 2
+                    local fireAngle = e.cannonAngle + math.pi/2
+                    local offset = math.max(e.width, e.height) * 0.8
+                    local bx = e.x + math.cos(fireAngle) * offset
+                    local by = e.y + math.sin(fireAngle) * offset
+                    
+                    -- === CRÉATION AMÉLIORÉE DE LA BULLET ===
+                    table.insert(e.bullets, {
+                        x = bx,
+                        y = by,
+                        angle = fireAngle,
+                        id = math.random(1000, 9999),
+                        owner = e.id,
+                        lifetime = 0,
+                        created_time = love.timer.getTime(),
+                        speed = 300
+                    })
+                end
+            else
+                e.shootTimer = math.random() * 2
             end
 
-            -- Déplacement des obus
+            -- === DÉPLACEMENT DES OBUS (AMÉLIORÉ) ===            
             for j = #e.bullets, 1, -1 do
                 local b = e.bullets[j]
-                local speed = 300
+                local speed = b.speed or 300
+                
+                -- === INCRÉMENTER LA DURÉE DE VIE ===
+                b.lifetime = (b.lifetime or 0) + dt
+                
+                -- Mouvement
                 b.x = b.x + math.cos(b.angle) * speed * dt
                 b.y = b.y + math.sin(b.angle) * speed * dt
-                if b.x < 0 or b.x > love.graphics.getWidth() or b.y < 0 or b.y > love.graphics.getHeight() then
+                
+                -- === LIMITE DE TEMPS pour éviter les bullets infinies ===
+                local maxLifetime = 10.0  -- 10 secondes max
+                if b.lifetime > maxLifetime then
                     table.remove(e.bullets, j)
                 end
+                -- === LIMITES  ===
+                local margin = 100
+                local screenW = love.graphics.getWidth()
+                local screenH = love.graphics.getHeight()
+                
+                if b.x < -margin or b.x > screenW + margin or 
+                   b.y < -margin or b.y > screenH + margin then
+                    table.remove(e.bullets, j)
+                end
+            
             end
         end
     end
@@ -182,44 +214,21 @@ function Ennemy.StopForceFollow(enemy)
     enemy.hasDetectedPlayer = false
 end
 
--- === RETOUR À VOTRE FONCTION DRAW EXACTE ===
+-- === FONCTION DRAW ===
 function Ennemy.Draw()
+    -- ÉTAPE 1: Dessiner d'abord tous les tanks
     for _, e in ipairs(Ennemy.list) do
         if e.alive then
-            -- Dessiner le tank vivant - EXACTEMENT comme votre code original
+            -- Dessiner le tank ennemi
+            love.graphics.setColor(1, 1, 1) -- Blanc pour le tank
             love.graphics.draw(
                 e.image,
                 e.x, e.y,
-                e.cannonAngle, -- VOTRE CODE EXACT
+                e.cannonAngle,
                 1, 1,
                 e.width / 2, e.height / 2
             )
-            local stateName = states[e.state]
-             -- Afficher l'état
-            if Ennemy.debug then 
-                love.graphics.setColor(1, 1, 1)
-                local debugText = stateName
-                if e.forceFollow then debugText = debugText .. " (FORCE)" end
-                love.graphics.print(
-                    debugText,
-                    e.x - e.width / 2,
-                    e.y - e.height / 2 - 16
-                )
-            end
-            
-            -- === VOTRE CODE EXACT ===
-            if stateName == "follow" then
-                for _, b in ipairs(e.bullets) do
-                    love.graphics.draw(
-                        Ennemy.bulletImage,
-                        b.x, b.y,
-                        b.angle + BULLET_OFFSET, 
-                        1, 1,
-                        Ennemy.bulletWidth / 2, Ennemy.bulletHeight / 2
-                    )
-                end
-            end
-            
+    
         elseif e.exploding then
             -- Dessiner l'explosion
             love.graphics.setColor(1, 1, 1)
@@ -233,6 +242,27 @@ function Ennemy.Draw()
             )
         end
     end
+    
+    -- ÉTAPE 2: Dessiner TOUTES les bullets PAR-DESSUS les tanks
+    for _, e in ipairs(Ennemy.list) do
+        if e.alive and #e.bullets > 0 then
+
+            -- === DESSINER LES BULLETS  ===
+            for i, b in ipairs(e.bullets) do
+                
+                love.graphics.draw(
+                    Ennemy.bulletImage,
+                    b.x, b.y,
+                    b.angle + BULLET_OFFSET, 
+                    1, 1,
+                    Ennemy.bulletWidth / 2, Ennemy.bulletHeight / 2
+                )
+            end
+        end
+    end
+    
+    -- Remettre la couleur blanche par défaut
+    love.graphics.setColor(1, 1, 1)
 end
 
 return Ennemy

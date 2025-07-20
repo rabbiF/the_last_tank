@@ -187,6 +187,7 @@ function Game.Draw()
     elseif Game.State.current == "VICTORY" then
         Game.DrawVictory()
     end
+
 end
 
 function Game.KeyPressed(key)
@@ -267,7 +268,6 @@ function Game.DrawGameplay()
 
     -- === AJOUTEZ CETTE LIGNE ===
     local Colission = require("gameColission")
-    Colission.DrawDebug(Player, Ennemy)
     
     -- Affichage spécifique au mode
     love.graphics.setColor(1, 1, 1)
@@ -315,9 +315,6 @@ end
 function Game.KeyPressedGameplay(key)
     if key == "backspace" then
         Game.ChangeState("PAUSE")
-    elseif key == "f1" then  -- === NOUVELLE TOUCHE ===
-        local Colission = require("gameColission")
-        Colission.ToggleDebug()
     else 
         Player.KeyPressed(key)
     end
@@ -345,6 +342,62 @@ function Game.AddScore(points)
     if Game.GameModes.score.active then
         Game.GameModes.score.current = Game.GameModes.score.current + points
     end
+end
+
+function TestBulletsVisual()
+    -- DIAGNOSTIC 1: Compter et afficher le total de bullets
+    local totalBullets = 0
+    local bulletsActive = 0
+    
+    for _, e in ipairs(Ennemy.list) do
+        if e.alive then
+            totalBullets = totalBullets + #e.bullets
+            if #e.bullets > 0 then
+                bulletsActive = bulletsActive + 1
+            end
+        end
+    end
+    
+    -- Afficher les compteurs en haut à gauche
+    love.graphics.setColor(1, 1, 0) -- Jaune vif
+    love.graphics.print("BULLETS ENNEMIES TOTALES: " .. totalBullets, 10, 10)
+    love.graphics.print("ENNEMIS AVEC BULLETS: " .. bulletsActive, 10, 30)
+    
+    -- DIAGNOSTIC 2: Dessiner des cercles rouges là où sont les bullets
+    love.graphics.setColor(1, 0, 0) -- Rouge vif
+    local bulletCount = 0
+    
+    for _, e in ipairs(Ennemy.list) do
+        if e.alive and #e.bullets > 0 then
+            for _, b in ipairs(e.bullets) do
+                bulletCount = bulletCount + 1
+                
+                -- Cercle rouge simple
+                love.graphics.circle("fill", b.x, b.y, 12)
+                
+                -- Numéro de la bullet
+                love.graphics.setColor(1, 1, 1) -- Blanc pour le texte
+                love.graphics.print(bulletCount, b.x - 5, b.y - 8)
+                love.graphics.setColor(1, 0, 0) -- Retour au rouge
+            end
+        end
+    end
+    
+    -- DIAGNOSTIC 3: État des ennemis (CORRECTION ICI)
+    love.graphics.setColor(1, 1, 1)
+    local yPos = 70
+    local states = {"random", "follow", "pause"} -- === AJOUT DE LA VARIABLE MANQUANTE ===
+    
+    for i, e in ipairs(Ennemy.list) do
+        if e.alive then
+            local stateName = states[e.state] or "unknown"
+            local bulletCount = #e.bullets
+            love.graphics.print("Ennemi " .. i .. ": " .. stateName .. " (" .. bulletCount .. " bullets)", 10, yPos)
+            yPos = yPos + 20
+        end
+    end
+    
+    love.graphics.setColor(1, 1, 1) -- Remettre blanc
 end
 
 
