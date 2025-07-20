@@ -6,6 +6,7 @@ local EXPLOSION_DURATION = 1.0 -- 1 seconde d'explosion
 -- === MACHINE À ÉTATS DES ENNEMIS ===
 -- States: 1=random, 2=follow, 3=pause (cycle de 2s chacun)
 local states = {"random", "follow", "pause"}
+Ennemy.debug = false
 
 -- === FONCTION POUR REMPLACER math.atan2 ===
 local function atan2(y, x)
@@ -236,6 +237,19 @@ function Ennemy.Draw()
                 1, 1,
                 Ennemy.explosionImage:getWidth() / 2,
                 Ennemy.explosionImage:getHeight() / 2
+            )
+        end
+
+        -- Debug état (AJOUT LIVE)
+        if Ennemy.debug then 
+            love.graphics.setColor(1, 1, 1)
+            local stateName = states[e.state]
+            local debugText = stateName
+            if e.forceFollow then debugText = debugText .. " (FORCE)" end
+            love.graphics.print(
+                debugText,
+                e.x - e.width / 2,
+                e.y - e.height / 2 - 16
             )
         end
     end

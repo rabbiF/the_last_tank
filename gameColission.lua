@@ -9,6 +9,8 @@ local COLLISION_CONFIG = {
     bullet_radius_factor = 1.5,      -- 150% de la taille du sprite (très généreux)
     bullet_to_player_factor = 0.45,  -- 45% pour balle vers joueur
     tank_collision_factor = 0.35,    -- 35% pour collision tank vs tank
+    -- Debug visuel - AJOUT LIVE
+    debug_enabled = false
 }
 
 -- Fonction utilitaire pour calculer la distance entre deux points
@@ -30,6 +32,8 @@ end
 
 local function getBulletRadius(bulletWidth, bulletHeight)
     return 12
+    -- local size = math.max(bulletWidth, bulletHeight)
+    -- return size * COLLISION_CONFIG.bullet_radius_factor
 end
 
 local function getBulletToPlayerRadius(player)
@@ -190,6 +194,51 @@ function Colission.Update(dt, Player, Ennemy, Game)
             end
         end
     end
+    -- activer le debug
+    if love.keyboard.isDown("d") then
+        COLLISION_CONFIG.debug_enabled = true
+    end
+end
+
+-- === FONCTION COMPLETE À AJOUTER à la fin du fichier ===
+-- === FONCTIONS DE DEBUG VISUEL ===
+local function drawDebugCircle(x, y, radius, color)
+    if not COLLISION_CONFIG.debug_enabled then return end
+    
+    love.graphics.setColor(color[1], color[2], color[3], 0.3)
+    love.graphics.circle("fill", x, y, radius)
+    love.graphics.setColor(color[1], color[2], color[3], 0.8)
+    love.graphics.circle("line", x, y, radius)
+end
+
+function Colission.DrawDebug(Player, Ennemy)
+    if not COLLISION_CONFIG.debug_enabled then return end
+    
+    -- Cercle du joueur (vert)
+    if Player.isAlive then
+        local playerRadius = getBulletToPlayerRadius(Player)
+        drawDebugCircle(Player.tank.x, Player.tank.y, playerRadius, {0, 1, 0})
+    end
+    
+    -- Cercles des ennemis (rouge)
+    for _, ennemy in ipairs(Ennemy.list) do
+        if ennemy.alive then
+            local ennemyRadius = getEnemyRadius(ennemy)
+            drawDebugCircle(ennemy.x, ennemy.y, ennemyRadius, {1, 0, 0})
+        end
+    end
+    
+    -- Cercles des balles ennemies (rouge clair)
+    for _, ennemy in ipairs(Ennemy.list) do
+        if ennemy.alive then
+            for _, bullet in ipairs(ennemy.bullets) do
+                local bulletRadius = getBulletRadius(Ennemy.bulletWidth, Ennemy.bulletHeight)
+                drawDebugCircle(bullet.x, bullet.y, bulletRadius, {1, 0.5, 0.5})
+            end
+        end
+    end
+    
+    love.graphics.setColor(1, 1, 1)
 end
 
 

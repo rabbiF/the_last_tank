@@ -266,6 +266,10 @@ function Game.DrawGameplay()
     Ennemy.Draw()
     Player.DrawUI()
 
+    --activer le debug
+    if Ennemy.debug == true then
+        TestBulletsVisual()
+    end
     -- === AJOUTEZ CETTE LIGNE ===
     local Colission = require("gameColission")
     
@@ -344,5 +348,54 @@ function Game.AddScore(points)
     end
 end
 
+function TestBulletsVisual()
+    -- Compter les bullets
+    local totalBullets = 0
+    local bulletsActive = 0
+    
+    for _, e in ipairs(Ennemy.list) do
+        if e.alive then
+            totalBullets = totalBullets + #e.bullets
+            if #e.bullets > 0 then
+                bulletsActive = bulletsActive + 1
+            end
+        end
+    end
+    
+    -- Afficher les compteurs
+    love.graphics.setColor(1, 1, 0) -- Jaune vif
+    love.graphics.print("BULLETS ENNEMIES: " .. totalBullets, 10, 10)
+    love.graphics.print("ENNEMIS ACTIFS: " .. bulletsActive, 10, 30)
+    
+    -- Dessiner des cercles rouges sur les bullets
+    love.graphics.setColor(1, 0, 0)
+    local bulletCount = 0
+    
+    for _, e in ipairs(Ennemy.list) do
+        if e.alive and #e.bullets > 0 then
+            for _, b in ipairs(e.bullets) do
+                bulletCount = bulletCount + 1
+                love.graphics.circle("fill", b.x, b.y, 8)
+            end
+        end
+    end
+    
+    -- États des ennemis
+    love.graphics.setColor(1, 1, 1)
+    local yPos = 70
+    local states = {"random", "follow", "pause"}
+    
+    for i, e in ipairs(Ennemy.list) do
+        if e.alive then
+            local stateName = states[e.state] or "unknown"
+            local bulletCount = #e.bullets
+            local text = "Ennemi " .. i .. ": " .. stateName .. " (" .. bulletCount .. " bullets)"
+            love.graphics.print(text, 10, yPos)
+            yPos = yPos + 20
+        end
+    end
+    
+    love.graphics.setColor(1, 1, 1)
+end
 
 return Game
