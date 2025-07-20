@@ -15,7 +15,7 @@ function Renderer.DrawControlsInMenu()
     
     -- Commandes essentielles
     love.graphics.setColor(0.8, 0.8, 0.8)
-    love.graphics.print("ZSQD Déplacement", startX, startY + 20)
+    love.graphics.print("HAUT/BAS/GAUCHE/DROIE Déplacement", startX, startY + 20)
     love.graphics.print("ESPACE Tirer", startX, startY + 40)
     love.graphics.print("A/E Rotation", startX, startY + 60)
     love.graphics.print("RETOUR ARRIERE Pause", startX, startY + 80)

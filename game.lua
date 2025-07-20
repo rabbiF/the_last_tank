@@ -264,6 +264,13 @@ function Game.DrawGameplay()
     Player.Draw()
     Ennemy.Draw()
     Player.DrawUI()
+
+    -- === AJOUTEZ CETTE LIGNE ===
+    local Colission = require("gameColission")
+    Colission.DrawDebug(Player, Ennemy)
+    
+    -- Affichage spécifique au mode
+    love.graphics.setColor(1, 1, 1)
     
     -- Affichage spécifique au mode
     love.graphics.setColor(1, 1, 1)
@@ -308,8 +315,11 @@ end
 function Game.KeyPressedGameplay(key)
     if key == "backspace" then
         Game.ChangeState("PAUSE")
+    elseif key == "f1" then  -- === NOUVELLE TOUCHE ===
+        local Colission = require("gameColission")
+        Colission.ToggleDebug()
     else 
-        Player.KeyPressed(key)  -- Transmettre toutes les autres touches au joueur   
+        Player.KeyPressed(key)
     end
 end
 

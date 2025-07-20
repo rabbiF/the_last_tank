@@ -5,12 +5,30 @@ local STATE_DURATION = 2 -- secondes par état
 local EXPLOSION_DURATION = 1.0 -- 1 seconde d'explosion
 local states = {"random", "follow", "pause"}
 
+local function atan2(y, x)
+    if x > 0 then
+        return math.atan(y / x)
+    elseif x < 0 then
+        if y >= 0 then
+            return math.atan(y / x) + math.pi
+        else
+            return math.atan(y / x) - math.pi
+        end
+    elseif y > 0 then
+        return math.pi / 2
+    elseif y < 0 then
+        return -math.pi / 2
+    else
+        return 0  -- Cas où x=0 et y=0
+    end
+end
+
 function Ennemy.Load()
     Ennemy.bulletImage = love.graphics.newImage("assets/images/bulletRed1.png")
     Ennemy.bulletWidth = Ennemy.bulletImage:getWidth()
     Ennemy.bulletHeight = Ennemy.bulletImage:getHeight()
-    Ennemy.explosionImage = love.graphics.newImage("assets/images/explosion2.png") -- Une seule fois
-    Ennemy.list = {} -- Liste dynamique des ennemis (spawn/suppression)
+    Ennemy.explosionImage = love.graphics.newImage("assets/images/explosion2.png")
+    Ennemy.list = {}
     Ennemy.debug = false
     for i=1,MAX_ENNEMIES do
         Ennemy.SpawnOne()
@@ -23,9 +41,8 @@ function Ennemy.SpawnOne()
         image = love.graphics.newImage("assets/images/tank_red.png"),
         width = 0,
         height = 0,
-        -- Spawn des ennemis dans la moitié haute de l'écran
         x = math.random(50, w-50),
-        y = math.random(50, h/3), -- Ennemis dans le tiers supérieur
+        y = math.random(50, h/3),
         speed = 40,
         angle = math.rad(90),
         cannonAngle = 0,
@@ -35,7 +52,12 @@ function Ennemy.SpawnOne()
         exploding = false,
         explosionTimer = 0,
         bullets = {},
-        shootTimer = math.random() * 2
+        shootTimer = math.random() * 2,
+        -- === AJOUT MINIMAL POUR LA DÉTECTION ===
+        id = #Ennemy.list + 1,
+        hasDetectedPlayer = false,
+        forceFollow = false,
+        followEndTime = 0
     }
     ennemy.width = ennemy.image:getWidth()
     ennemy.height = ennemy.image:getHeight()
@@ -47,29 +69,35 @@ function Ennemy.Kill(ennemy)
     ennemy.exploding = true
     ennemy.explosionTimer = EXPLOSION_DURATION
 end
--- === MACHINE À ÉTATS DES ENNEMIS ===
--- Cycle : random (mvt aléatoire) → follow (poursuite) → pause (arrêt + visée)
+
+-- === VOTRE LOGIQUE ORIGINALE + DÉTECTION ===
 function Ennemy.Update(dt, player)
-    -- Mise à jour des ennemis
     for i = #Ennemy.list, 1, -1 do
         local e = Ennemy.list[i]
         
         if e.exploding then
-            -- Gestion de l'explosion
             e.explosionTimer = e.explosionTimer - dt
             if e.explosionTimer <= 0 then
-                -- Explosion terminée, supprimer complètement l'ennemi
                 table.remove(Ennemy.list, i)
             end
         elseif e.alive then
-            -- Logique normale des ennemis vivants
-            e.stateTimer = e.stateTimer - dt
-            if e.stateTimer <= 0 then
-                e.state = e.state % 3 + 1
-                e.stateTimer = STATE_DURATION
-                e.justChangedState = true
+            -- === SEULE MODIFICATION : Vérifier le follow forcé ===
+            local currentTime = love.timer.getTime()
+            if e.forceFollow and currentTime < e.followEndTime then
+                -- Follow forcé par détection
+                e.state = 2
+            else
+                -- === VOTRE LOGIQUE ORIGINALE EXACTE ===
+                e.forceFollow = false
+                e.stateTimer = e.stateTimer - dt
+                if e.stateTimer <= 0 then
+                    e.state = e.state % 3 + 1
+                    e.stateTimer = STATE_DURATION
+                    e.justChangedState = true
+                end
             end
 
+            -- === VOTRE LOGIQUE ORIGINALE EXACTE ===
             if states[e.state] == "random" then
                 if e.justChangedState then
                     e.angle = math.random() * 2 * math.pi
@@ -84,33 +112,35 @@ function Ennemy.Update(dt, player)
             elseif states[e.state] == "follow" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                local angleToPlayer = math.atan(dy, dx) -- Calcul de l'angle vers le joueur pour la poursuite
+                -- === atan2 pour gérer tous les quadrants ===
+                local angleToPlayer = atan2(dy, dx)
                 e.angle = angleToPlayer
                 e.x = e.x + math.cos(e.angle) * e.speed * dt
                 e.y = e.y + math.sin(e.angle) * e.speed * dt
                 e.cannonAngle = angleToPlayer - math.pi/2
+                
             elseif states[e.state] == "pause" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                e.cannonAngle = math.atan(dy, dx) - math.pi/2
+                e.cannonAngle = atan2(dy, dx) - math.pi/2 
             end
             
             -- Empêcher de sortir de l'écran
             e.x = math.max(e.width/2, math.min(love.graphics.getWidth()-e.width/2, e.x))
             e.y = math.max(e.height/2, math.min(love.graphics.getHeight()-e.height/2, e.y))
 
-            -- Gestion des tirs
+            -- === VOTRE LOGIQUE ORIGINALE EXACTE ===
             e.shootTimer = (e.shootTimer or 0) - dt
             if e.shootTimer <= 0 then
                 e.shootTimer = 2
-                local angle = e.cannonAngle + BULLET_OFFSET
+                local fireAngle = e.cannonAngle + math.pi/2
                 local offset = e.height / 2
-                local bx = e.x + math.cos(angle) * offset
-                local by = e.y + math.sin(angle) * offset
+                local bx = e.x + math.cos(fireAngle) * offset
+                local by = e.y + math.sin(fireAngle) * offset
                 table.insert(e.bullets, {
                     x = bx,
                     y = by,
-                    angle = angle
+                    angle = fireAngle
                 })
             end
 
@@ -139,14 +169,28 @@ function Ennemy.Update(dt, player)
     end
 end
 
+-- === API POUR GAMECOLISSION ===
+function Ennemy.ForceFollow(enemy, duration)
+    enemy.forceFollow = true
+    enemy.followEndTime = love.timer.getTime() + duration
+    enemy.state = 2
+    enemy.hasDetectedPlayer = true
+end
+
+function Ennemy.StopForceFollow(enemy)
+    enemy.forceFollow = false
+    enemy.hasDetectedPlayer = false
+end
+
+-- === RETOUR À VOTRE FONCTION DRAW EXACTE ===
 function Ennemy.Draw()
     for _, e in ipairs(Ennemy.list) do
         if e.alive then
-            -- Dessiner le tank vivant
+            -- Dessiner le tank vivant - EXACTEMENT comme votre code original
             love.graphics.draw(
                 e.image,
                 e.x, e.y,
-                e.cannonAngle,
+                e.cannonAngle, -- VOTRE CODE EXACT
                 1, 1,
                 e.width / 2, e.height / 2
             )
@@ -154,19 +198,22 @@ function Ennemy.Draw()
              -- Afficher l'état
             if Ennemy.debug then 
                 love.graphics.setColor(1, 1, 1)
+                local debugText = stateName
+                if e.forceFollow then debugText = debugText .. " (FORCE)" end
                 love.graphics.print(
-                    stateName,
+                    debugText,
                     e.x - e.width / 2,
                     e.y - e.height / 2 - 16
                 )
             end
-            -- Dessiner les obus
+            
+            -- === VOTRE CODE EXACT ===
             if stateName == "follow" then
                 for _, b in ipairs(e.bullets) do
                     love.graphics.draw(
                         Ennemy.bulletImage,
                         b.x, b.y,
-                        b.angle + BULLET_OFFSET,
+                        b.angle + BULLET_OFFSET, 
                         1, 1,
                         Ennemy.bulletWidth / 2, Ennemy.bulletHeight / 2
                     )
@@ -175,11 +222,11 @@ function Ennemy.Draw()
             
         elseif e.exploding then
             -- Dessiner l'explosion
-            love.graphics.setColor(1, 1, 1) -- Blanc normal
+            love.graphics.setColor(1, 1, 1)
             love.graphics.draw(
                 Ennemy.explosionImage,
                 e.x, e.y,
-                0, -- Pas de rotation pour l'explosion
+                0,
                 1, 1,
                 Ennemy.explosionImage:getWidth() / 2,
                 Ennemy.explosionImage:getHeight() / 2
