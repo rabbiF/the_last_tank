@@ -72,7 +72,6 @@ function Ennemy.Kill(ennemy)
     ennemy.explosionTimer = EXPLOSION_DURATION
 end
 
--- === VOTRE LOGIQUE ORIGINALE + DÉTECTION ===
 function Ennemy.Update(dt, player)
     for i = #Ennemy.list, 1, -1 do
         local e = Ennemy.list[i]
@@ -89,7 +88,6 @@ function Ennemy.Update(dt, player)
                 -- Follow forcé par détection
                 e.state = 2
             else
-                -- === VOTRE LOGIQUE ORIGINALE EXACTE ===
                 e.forceFollow = false
                 e.stateTimer = e.stateTimer - dt
                 if e.stateTimer <= 0 then
@@ -99,7 +97,6 @@ function Ennemy.Update(dt, player)
                 end
             end
 
-            -- === VOTRE LOGIQUE ORIGINALE EXACTE ===
             if states[e.state] == "random" then
                 if e.justChangedState then
                     e.angle = math.random() * 2 * math.pi
@@ -124,7 +121,7 @@ function Ennemy.Update(dt, player)
             elseif states[e.state] == "pause" then
                 local dx = player.tank.x - e.x
                 local dy = player.tank.y - e.y
-                -- === CORRECTION : Utilise atan2 au lieu de math.atan ===
+                -- === Utilise atan2 au lieu de math.atan ===
                 e.cannonAngle = atan2(dy, dx) - math.pi/2
             end
             
