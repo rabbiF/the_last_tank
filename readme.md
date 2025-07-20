@@ -65,7 +65,7 @@ Face aux assauts incessants de l'Empire Sablonnerai, vous devez tenir coûte que
 
 
 ## 🎮 Captures d'écran
-*À ajouter prochainement*
+*À ajouter*
 
 ## 📚 Contexte pédagogique
 Ce projet met en œuvre les concepts fondamentaux de la programmation de jeux vidéo :
@@ -75,5 +75,8 @@ Ce projet met en œuvre les concepts fondamentaux de la programmation de jeux vi
 - Les fonctions (structuration du code)
 - Les machines à états (comportements et modes de jeu)
 
+## Credits
+Tous les éléments sonores et visuels sont réalisés par Kenney avec une licence CC0 : www.kenney.nl
+La font est réalisé par Matt McInerney avec une licence OFL : fonts.google.com/specimen/Allerta+Stencil
 ---
 *Projet réalisé dans le cadre de la formation "Programmer des Jeux Vidéo" via l'école Gaming Campus (https://gamingcampus.fr/pro/developpement-jeux-video.html)*

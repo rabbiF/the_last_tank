@@ -116,7 +116,7 @@ end
 
 -- === FONCTIONS PRINCIPALES ===
 function Game.Load()
-    
+    love.window.setTitle("The Last Tank")
     Game.TileSheet = love.graphics.newImage("assets/images/terrain.png")
     local nbColumns = Game.TileSheet:getWidth() / Game.Map.TILE_WIDTH
     local nbLines = Game.TileSheet:getHeight() / Game.Map.TILE_HEIGHT
