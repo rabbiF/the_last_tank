@@ -14,7 +14,10 @@ Face aux assauts incessants de l'Empire Sablonnerai, vous devez tenir coûte que
 ### Contrôles
 - **ZSQD** : Déplacer le tank
 - **A / E** : Rotation du tank
+- **D** : Debug pour afficher la MAE des ennemis
 - **Espace** : Tirer
+- **RETOUR ARRIERE** : Pause
+- **ECHAP** : Quitter
 
 ### Modes de jeu
 - **🏃 Survival** : Survie infinie jusqu'à épuisement de toutes vos vies
