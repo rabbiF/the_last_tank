@@ -78,5 +78,8 @@ Ce projet met en œuvre les concepts fondamentaux de la programmation de jeux vi
 ## Credits
 Tous les éléments sonores et visuels sont réalisés par Kenney avec une licence CC0 : www.kenney.nl
 La font est réalisé par Matt McInerney avec une licence OFL : fonts.google.com/specimen/Allerta+Stencil
+
+## GitHub
+https://github.com/rabbiF/the_last_tank
 ---
 *Projet réalisé dans le cadre de la formation "Programmer des Jeux Vidéo" via l'école Gaming Campus (https://gamingcampus.fr/pro/developpement-jeux-video.html)*
